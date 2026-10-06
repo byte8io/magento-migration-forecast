@@ -1,0 +1,4 @@
+# exclude dev-only files from the generated tarball
+.git*       export-ignore
+.config*    export-ignore
+Test        export-ignore

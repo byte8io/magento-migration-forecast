@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!--
+/**
+ * Copyright © Byte8 Ltd. All rights reserved.
+ * See LICENSE.txt for license details.
+ */
+-->
+<config xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:noNamespaceSchemaLocation="urn:magento:framework:ObjectManager/etc/config.xsd">
+    <!-- CLI -->
+    <type name="Magento\Framework\Console\CommandListInterface">
+        <arguments>
+            <argument name="commands" xsi:type="array">
+                <item name="byte8_migration_forecast" xsi:type="object">Byte8\MigrationForecast\Console\Command\ForecastCommand</item>
+            </argument>
+        </arguments>
+    </type>
+    <!-- Commands are instantiated on every bin/magento call: keep the schema readers lazy. -->
+    <type name="Byte8\MigrationForecast\Console\Command\ForecastCommand">
+        <arguments>
+            <argument name="forecaster" xsi:type="object">Byte8\MigrationForecast\Model\Forecaster\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="Byte8\MigrationForecast\Model\PendingPatchProvider">
+        <arguments>
+            <argument name="dataPatchReader" xsi:type="object">\Magento\Framework\Setup\Patch\DataPatchReader</argument>
+            <argument name="schemaPatchReader" xsi:type="object">\Magento\Framework\Setup\Patch\SchemaPatchReader</argument>
+        </arguments>
+    </type>
+</config>
