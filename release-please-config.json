@@ -1,0 +1,34 @@
+{
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json",
+  "packages": {
+    ".": {
+      "release-type": "simple",
+      "package-name": "byte8/module-migration-forecast",
+      "include-component-in-tag": false,
+      "include-v-in-tag": true,
+      "draft": false,
+      "prerelease": false,
+      "bump-minor-pre-major": true,
+      "bump-patch-for-minor-pre-major": false,
+      "changelog-sections": [
+        { "type": "feat",     "section": "Features" },
+        { "type": "fix",      "section": "Bug Fixes" },
+        { "type": "perf",     "section": "Performance" },
+        { "type": "refactor", "section": "Refactor" },
+        { "type": "docs",     "section": "Documentation", "hidden": false },
+        { "type": "chore",    "section": "Miscellaneous", "hidden": true },
+        { "type": "style",    "section": "Style",         "hidden": true },
+        { "type": "test",     "section": "Tests",         "hidden": true },
+        { "type": "ci",       "section": "CI",            "hidden": true },
+        { "type": "build",    "section": "Build",         "hidden": true }
+      ],
+      "extra-files": [
+        {
+          "type": "json",
+          "path": "composer.json",
+          "jsonpath": "$.version"
+        }
+      ]
+    }
+  }
+}

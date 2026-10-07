@@ -2,3 +2,6 @@
 .git*       export-ignore
 .config*    export-ignore
 Test        export-ignore
+.release-please-manifest.json   export-ignore
+release-please-config.json      export-ignore
+RELEASING.md                    export-ignore
