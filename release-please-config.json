@@ -4,6 +4,7 @@
     ".": {
       "release-type": "simple",
       "package-name": "byte8/module-migration-forecast",
+      "initial-version": "0.1.0",
       "include-component-in-tag": false,
       "include-v-in-tag": true,
       "draft": false,
