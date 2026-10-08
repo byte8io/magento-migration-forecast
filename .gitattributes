@@ -1,7 +1,12 @@
-# exclude dev-only files from the generated tarball
-.git*       export-ignore
-.config*    export-ignore
-Test        export-ignore
+# keep the Composer dist lean: no tests, CI or repo housekeeping
+.git*                           export-ignore
+.config*                        export-ignore
+.github                         export-ignore
+Test                            export-ignore
+phpunit.xml.dist                export-ignore
+phpstan.neon.dist               export-ignore
 .release-please-manifest.json   export-ignore
 release-please-config.json      export-ignore
 RELEASING.md                    export-ignore
+CONTRIBUTING.md                 export-ignore
+CODE_OF_CONDUCT.md              export-ignore

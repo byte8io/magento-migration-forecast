@@ -70,6 +70,7 @@ class PendingPatchProvider
     {
         $pending = [];
         try {
+            /** @var array<int, array<string, string>> $errors Core documents string[], returns rows. */
             $errors = $this->dbVersionInfo->getDbVersionErrors();
         } catch (\Throwable $e) {
             return [];

@@ -1,0 +1,179 @@
+name: CI
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  unit:
+    name: Unit (PHP ${{ matrix.php }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - php: '8.1'
+            phpunit: '10.5'
+          - php: '8.2'
+            phpunit: '11'
+          - php: '8.3'
+            phpunit: '12'
+          - php: '8.4'
+            phpunit: '12'
+          - php: '8.5'
+            phpunit: '12'
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          tools: phpunit:${{ matrix.phpunit }}
+          coverage: none
+
+      - name: Lint
+        run: find . -name '*.php' -print0 | xargs -0 -n1 php -l > /dev/null
+
+      - name: PHPUnit
+        run: phpunit
+
+  install:
+    name: ${{ matrix.name }}
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - name: Mage-OS 3.x
+            repository: https://repo.mage-os.org/
+            package: mage-os/project-community-edition
+            version: '^3.0'
+            php: '8.4'
+            static: true
+          - name: Mage-OS 2.x
+            repository: https://repo.mage-os.org/
+            package: mage-os/project-community-edition
+            version: '^2.0'
+            php: '8.3'
+            static: false
+          - name: Magento Open Source 2.4.9
+            repository: https://mirror.mage-os.org/
+            package: magento/project-community-edition
+            version: '2.4.9'
+            php: '8.4'
+            static: false
+    services:
+      mysql:
+        image: mysql:8.4
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: magento
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -proot"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=10
+      opensearch:
+        image: opensearchproject/opensearch:2.19.1
+        env:
+          discovery.type: single-node
+          DISABLE_SECURITY_PLUGIN: 'true'
+          DISABLE_INSTALL_DEMO_CONFIG: 'true'
+          OPENSEARCH_JAVA_OPTS: -Xms512m -Xmx512m
+        ports:
+          - 9200:9200
+        options: >-
+          --health-cmd="curl -sf http://127.0.0.1:9200/_cluster/health"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=20
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          path: module
+
+      - uses: shivammathur/setup-php@v2
+        with:
+          php-version: ${{ matrix.php }}
+          extensions: bcmath, ctype, curl, dom, ftp, gd, intl, mbstring, pdo_mysql, simplexml, soap, sockets, sodium, xsl, zip
+          tools: composer:v2
+          coverage: none
+
+      - name: Create project
+        run: >-
+          composer create-project --no-interaction --no-progress
+          --repository-url=${{ matrix.repository }}
+          "${{ matrix.package }}:${{ matrix.version }}" magento
+
+      - name: Require the module
+        working-directory: magento
+        run: |
+          composer config repositories.module \
+            '{"type": "path", "url": "../module", "options": {"symlink": false, "versions": {"byte8/module-migration-forecast": "dev-ci"}}}'
+          composer require --no-interaction --no-progress byte8/module-migration-forecast:dev-ci
+
+      - name: Install
+        working-directory: magento
+        run: >-
+          bin/magento setup:install --no-interaction
+          --base-url=http://localhost/
+          --db-host=127.0.0.1 --db-name=magento --db-user=root --db-password=root
+          --admin-firstname=CI --admin-lastname=CI --admin-email=ci@example.com
+          --admin-user=ci --admin-password=Password123
+          --backend-frontname=admin
+          --search-engine=opensearch --opensearch-host=127.0.0.1 --opensearch-port=9200
+
+      - name: Compile
+        working-directory: magento
+        run: |
+          bin/magento module:status Byte8_MigrationForecast | grep -q 'Module is enabled'
+          bin/magento setup:di:compile
+
+      - name: Forecast runs on a clean install
+        working-directory: magento
+        run: |
+          bin/magento setup:upgrade:forecast
+          bin/magento setup:upgrade:forecast --format=json > clean.json
+          jq -e 'has("schema_changes") and has("predicted_secs") and has("confidence")' clean.json
+
+      - name: Forecast detects schema drift
+        working-directory: magento
+        run: |
+          mysql -h 127.0.0.1 -uroot -proot magento -e 'ALTER TABLE admin_user DROP COLUMN interface_locale'
+          bin/magento setup:upgrade:forecast --format=json > drift.json
+          jq -e '[.schema_changes[] | select(.table == "admin_user" and .kind == "add_column" and .name == "interface_locale" and .algorithm == "instant")] | length == 1' drift.json
+          # The gate must fail the build when the limit is exceeded.
+          if bin/magento setup:upgrade:forecast --max-seconds=0; then
+            echo 'Expected a failure exit code with --max-seconds=0' >&2
+            exit 1
+          fi
+
+      - name: setup:upgrade clears the forecast
+        working-directory: magento
+        run: |
+          bin/magento setup:upgrade --keep-generated
+          bin/magento setup:upgrade:forecast --format=json > after.json
+          jq -e '[.schema_changes[] | select(.table == "admin_user")] | length == 0' after.json
+
+      - name: Coding standard
+        if: matrix.static
+        working-directory: magento
+        run: vendor/bin/phpcs --standard=Magento2 --severity=10 --extensions=php ../module
+
+      - name: PHPStan
+        if: matrix.static
+        working-directory: magento
+        run: >-
+          vendor/bin/phpstan analyse --no-progress
+          -c ../module/phpstan.neon.dist --autoload-file vendor/autoload.php

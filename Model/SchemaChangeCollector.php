@@ -50,7 +50,9 @@ class SchemaChangeCollector
     }
 
     /**
-     * @return array<int, array{table: string, resource: string, kind: string, name: string, context: array}>
+     * Each item: table, resource, kind, name (strings) and context (array).
+     *
+     * @return array<int, array<string, mixed>>
      */
     public function collect(): array
     {
@@ -60,7 +62,8 @@ class SchemaChangeCollector
         );
 
         $changes = [];
-        foreach ($diff->getAll() ?? [] as $operations) {
+        // getAll() is documented as an array but returns null when nothing differs.
+        foreach ($diff->getAll() ?: [] as $operations) {
             foreach ($operations as $operation => $histories) {
                 foreach ($histories as $history) {
                     if ($history instanceof ElementHistory) {
@@ -76,7 +79,7 @@ class SchemaChangeCollector
     /**
      * @param string $operation
      * @param ElementHistory $history
-     * @return array{table: string, resource: string, kind: string, name: string, context: array}
+     * @return array<string, mixed>
      */
     private function describe(string $operation, ElementHistory $history): array
     {

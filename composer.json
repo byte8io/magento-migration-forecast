@@ -15,8 +15,10 @@
         "zero-downtime",
         "deployment"
     ],
-    "homepage": "https://byte8.io/orbit",
+    "homepage": "https://github.com/byte8io/magento-migration-forecast",
     "support": {
+        "issues": "https://github.com/byte8io/magento-migration-forecast/issues",
+        "source": "https://github.com/byte8io/magento-migration-forecast",
         "email": "helo@byte8.io"
     },
     "authors": [
@@ -36,6 +38,5 @@
         "psr-4": {
             "Byte8\\MigrationForecast\\": ""
         }
-    },
-    "version": "0.1.0"
+    }
 }
