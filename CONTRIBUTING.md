@@ -8,7 +8,7 @@ your MySQL/MariaDB version and the table's row count.
 ## Development
 
 Clone the repository into `app/code/Byte8/MigrationForecast` of any Magento
-Open Source or Mage-OS 2.4.x install, then:
+Open Source 2.4.x or Mage-OS 2.x / 3.x install, then:
 
 ```bash
 bin/magento module:enable Byte8_MigrationForecast
