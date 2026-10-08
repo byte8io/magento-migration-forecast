@@ -1,4 +1,8 @@
-# Migration Forecast for Magento 2
+# Migration Forecast for Magento 2 and Mage-OS
+
+[![CI](https://github.com/byte8io/magento-migration-forecast/actions/workflows/ci.yml/badge.svg)](https://github.com/byte8io/magento-migration-forecast/actions/workflows/ci.yml)
+[![Packagist](https://img.shields.io/packagist/v/byte8/module-migration-forecast)](https://packagist.org/packages/byte8/module-migration-forecast)
+[![Licence: MIT](https://img.shields.io/badge/licence-MIT-blue.svg)](LICENSE.txt)
 
 Know what `setup:upgrade` will do to your database **before** you run it.
 
@@ -46,8 +50,24 @@ bin/magento module:enable Byte8_MigrationForecast
 bin/magento setup:upgrade
 ```
 
-Requires Magento Open Source / Adobe Commerce / Mage-OS 2.4.x on PHP 8.1+. No
-other dependencies, no configuration, no licence key.
+The only dependency is the framework itself. There is nothing to configure, no
+licence key, no telemetry and no network call of any kind.
+
+## Compatibility
+
+| Platform | Versions | How it is verified |
+|---|---|---|
+| **Mage-OS** | 2.x, 3.x | Clean install + end-to-end forecast in CI on every commit |
+| **Magento Open Source** | 2.4.9 | Clean install + end-to-end forecast in CI on every commit |
+| Magento Open Source | 2.4.4 – 2.4.8 | Same framework line (`magento/framework ^103.0`); not run in CI |
+| Adobe Commerce | 2.4.4 – 2.4.9 | Same framework line; not run in CI |
+| **PHP** | 8.1 – 8.5 | Unit tests in CI on every version |
+| **MySQL** | 8.4 | CI database. The classification follows MySQL 8's online-DDL rules, so 8.0 behaves the same except where noted under Limits |
+| MariaDB | 10.6 | Runs (developed against it); the matrix is MySQL's, so treat the class as an approximation |
+
+On Mage-OS the requirement on `magento/framework` is satisfied by
+`mage-os/framework`, so `composer require` works unchanged — no patches, no
+alternative package.
 
 ## Use
 
@@ -129,22 +149,39 @@ bin/magento setup:upgrade --keep-generated
   but are invisible to the diff until then. The command warns about each one.
 - **MariaDB** follows the same matrix closely enough for the classification to
   hold, but it was written against MySQL 8's documentation.
+- **Split databases:** tables on a non-default connection are sized through
+  their own connection, but this path is not covered by CI.
 
-## Tests
+## Open source and Mage-OS
 
-The unit tests ship with the repository, not the Composer dist. From a clone
-placed in `app/code/Byte8/MigrationForecast`:
+This module is open source under the MIT licence and works on Mage-OS. It is
+developed in the open at
+[github.com/byte8io/magento-migration-forecast](https://github.com/byte8io/magento-migration-forecast)
+and distributed through Packagist, which also lists it in the
+[Mage-OS Extension Directory](https://directory.mage-os.org/).
 
-```bash
-vendor/bin/phpunit --bootstrap vendor/autoload.php --no-configuration \
-    app/code/Byte8/MigrationForecast/Test/Unit
-```
+Its maintainer is a member of the [Mage-OS Association](https://mage-os.org/).
+The module is an independent Byte8 project; it is not an official Mage-OS
+package.
 
-## Origin
+## Contributing
 
-Extracted from the migration-intelligence engine in
-[Orbit](https://byte8.io/orbit), Byte8's zero-downtime deployment service for
-Magento, where the same forecast sizes the traffic-hold window for each deploy.
+Issues and pull requests are welcome — above all, real measurements. If the
+forecast was wrong on your store, that is the most useful thing you can tell us.
+
+- [CONTRIBUTING.md](CONTRIBUTING.md) — setup, checks, how to change the matrix
+- [SECURITY.md](SECURITY.md) — reporting a vulnerability
+- [CODE_OF_CONDUCT.md](CODE_OF_CONDUCT.md)
+- [CHANGELOG.md](CHANGELOG.md)
+
+The unit tests are framework-free and run from a plain clone with `phpunit`.
+
+## Credits
+
+Built and maintained by [Byte8](https://byte8.io). Extracted from the
+migration-intelligence engine in [Orbit](https://byte8.io/orbit), Byte8's
+zero-downtime deployment service for Magento, where the same forecast sizes the
+traffic-hold window for each deploy.
 
 ## Licence
 

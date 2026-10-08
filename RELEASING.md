@@ -1,9 +1,9 @@
 # Releasing
 
 This module uses [release-please](https://github.com/googleapis/release-please)
-for fully automated semantic-version releases. **Do not bump
-`composer.json` `version` by hand and do not create `vX.Y.Z` tags
-manually** — the bot owns both.
+for fully automated semantic-version releases. **Do not create `vX.Y.Z`
+tags manually** — the bot owns them. `composer.json` deliberately has no
+`version` field: Packagist reads the version from the tag.
 
 ## How a release happens
 
@@ -14,7 +14,6 @@ manually** — the bot owns both.
    `googleapis/release-please-action`, which keeps a single
    **release PR** (titled e.g. `chore(main): release 1.1.0`) up to
    date. That PR contains:
-   - the new `version` in `composer.json`
    - a generated `CHANGELOG.md` entry
    - a bumped `.release-please-manifest.json`
 3. When you merge the release PR, the action creates the matching git

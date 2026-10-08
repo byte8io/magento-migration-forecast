@@ -119,9 +119,11 @@ jobs:
       - name: Require the module
         working-directory: magento
         run: |
+          # Versioned above anything on Packagist: the project's dependency-confusion
+          # audit refuses a local package that a public repository outranks.
           composer config repositories.module \
-            '{"type": "path", "url": "../module", "options": {"symlink": false, "versions": {"byte8/module-migration-forecast": "dev-ci"}}}'
-          composer require --no-interaction --no-progress byte8/module-migration-forecast:dev-ci
+            '{"type": "path", "url": "../module", "options": {"symlink": false, "versions": {"byte8/module-migration-forecast": "999.0.0"}}}'
+          composer require --no-interaction --no-progress byte8/module-migration-forecast:999.0.0
 
       - name: Install
         working-directory: magento
