@@ -25,11 +25,11 @@ $ bin/magento setup:db:forecast
   sales_order_item sku: Changed: length.
   sales_order_grid fixture_tag: INSTANT is unavailable on tables with a FULLTEXT index. ...
 
-Pending data patches (cost unknown): 1
+Pending data patches (not costed): 1
   - Acme\Widget\Setup\Patch\Data\SeedWidgets
 
-Migration forecast: 2 blocking, 1 instant, 1 online; 1 patch(es)/script(s) of unknown cost;
-predicted ~81s, ~78s write-blocking (confidence: low)
+DDL forecast: 2 blocking, 1 instant, 1 online; ~81s, ~78s write-blocking (confidence: high).
+Plus 1 patch(es)/script(s) not costed.
 ```
 
 It is read-only. It never alters the database, never writes a file, and never
@@ -82,6 +82,7 @@ bin/magento setup:db:forecast
 | `--format=json` | Machine-readable output for CI and deploy tooling. |
 | `--max-seconds=N` | Exit `1` when the predicted duration exceeds `N` seconds. |
 | `--max-blocking-seconds=N` | Exit `1` when the write-blocking part exceeds `N` seconds. |
+| `--fail-on-uncosted` | Exit `1` when any patch or setup script is pending, because its cost is unknown. |
 | `--inplace-rate=N` | Rows per second your host manages for in-place DDL. Default `100000`. |
 | `--copy-rate=N` | Rows per second your host manages for table-copy DDL. Default `50000`. |
 
@@ -124,16 +125,24 @@ bin/magento setup:upgrade --keep-generated
    and a throughput per class. Magento folds all changes to one table into a
    single `ALTER`, so a table is rebuilt once however many changes force it.
 4. **What cannot be costed is listed, not guessed.** Pending data patches,
-   schema patches and legacy `Install`/`Upgrade` scripts are arbitrary PHP; they
-   are named and they drop the confidence to `low`.
+   schema patches and legacy `Install`/`Upgrade` scripts are arbitrary PHP. They
+   are named beside the DDL forecast and never folded into it: the seconds you
+   see are DDL plus bootstrap, nothing else.
 
 ### Confidence
 
+Confidence describes the DDL figure only. A pending patch does not lower it —
+a release with a trivial data patch still gets a trustworthy DDL forecast, and
+the patch is reported on its own line for you to judge.
+
 | Level | Meaning |
 |---|---|
-| `high` | Only DDL is pending and every affected table's size is known. |
-| `medium` | Only DDL is pending, but some table sizes could not be read. |
-| `low` | Patches, legacy scripts or not-yet-enabled modules are pending — the DDL figure is a floor, not a total. |
+| `high` | Every affected table's size was read. |
+| `medium` | Some table sizes could not be read; class defaults were used. |
+| `low` | A module not yet in `app/etc/config.php` ships a `db_schema.xml` the diff cannot see, so DDL is missing from the figure. |
+
+Use `--fail-on-uncosted` if you would rather stop a pipeline whenever a patch
+is pending than review it by eye.
 
 ## Limits
 

@@ -29,6 +29,7 @@ class ForecastCommand extends Command
     private const OPTION_FORMAT = 'format';
     private const OPTION_MAX_SECONDS = 'max-seconds';
     private const OPTION_MAX_BLOCKING_SECONDS = 'max-blocking-seconds';
+    private const OPTION_FAIL_ON_UNCOSTED = 'fail-on-uncosted';
     private const OPTION_INPLACE_RATE = 'inplace-rate';
     private const OPTION_COPY_RATE = 'copy-rate';
     private const FORMAT_TEXT = 'text';
@@ -73,6 +74,12 @@ class ForecastCommand extends Command
                     null,
                     InputOption::VALUE_REQUIRED,
                     'Exit with a failure code when the predicted write-blocking time exceeds this many seconds.'
+                ),
+                new InputOption(
+                    self::OPTION_FAIL_ON_UNCOSTED,
+                    null,
+                    InputOption::VALUE_NONE,
+                    'Exit with a failure code when patches or setup scripts are pending: their cost is unknown.'
                 ),
                 new InputOption(
                     self::OPTION_INPLACE_RATE,
@@ -155,6 +162,17 @@ class ForecastCommand extends Command
             }
         }
 
+        if ($input->getOption(self::OPTION_FAIL_ON_UNCOSTED) && $forecast->getUncostedCount()) {
+            $exceeded = true;
+            if ($explain) {
+                $output->writeln(sprintf(
+                    '<error>%d pending patch(es)/script(s) are not costed (--%s).</error>',
+                    $forecast->getUncostedCount(),
+                    self::OPTION_FAIL_ON_UNCOSTED
+                ));
+            }
+        }
+
         return $exceeded;
     }
 
@@ -194,9 +212,9 @@ class ForecastCommand extends Command
             $output->writeln('<info>Declarative schema is up to date: no DDL pending.</info>');
         }
 
-        $this->renderList($output, 'Pending data patches (cost unknown)', $forecast->dataPatches);
-        $this->renderList($output, 'Pending schema patches (cost unknown)', $forecast->schemaPatches);
-        $this->renderList($output, 'Legacy setup scripts to run (cost unknown)', $forecast->legacyScripts);
+        $this->renderList($output, 'Pending data patches (not costed)', $forecast->dataPatches);
+        $this->renderList($output, 'Pending schema patches (not costed)', $forecast->schemaPatches);
+        $this->renderList($output, 'Legacy setup scripts to run (not costed)', $forecast->legacyScripts);
         $this->renderList($output, 'Warnings', $forecast->warnings);
 
         $output->writeln('');

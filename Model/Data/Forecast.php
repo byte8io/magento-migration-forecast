@@ -24,9 +24,10 @@ class Forecast
      * @param string[] $schemaPatches Pending schema patch classes (cost unknown).
      * @param string[] $legacyScripts Modules whose Install/Upgrade scripts will run.
      * @param string[] $warnings
-     * @param int $predictedSeconds Bootstrap overhead plus all DDL.
+     * @param int $predictedSeconds Bootstrap overhead plus all DDL. Patches and scripts are NOT included.
      * @param int $blockingSeconds Portion of the DDL during which some table rejects writes.
-     * @param string $confidence One of the CONFIDENCE_* constants.
+     * @param string $confidence How far the DDL figure can be trusted (CONFIDENCE_*). Pending patches
+     *                           do not lower it: they are reported separately, never folded in.
      */
     public function __construct(
         public readonly array $schemaChanges,
@@ -76,15 +77,19 @@ class Forecast
             $classes[] = $count . ' ' . $impact;
         }
 
-        return sprintf(
-            'Migration forecast: %s; %d patch(es)/script(s) of unknown cost; '
-            . 'predicted ~%ds, ~%ds write-blocking (confidence: %s)',
+        $summary = sprintf(
+            'DDL forecast: %s; ~%ds, ~%ds write-blocking (confidence: %s).',
             $classes ? implode(', ', $classes) : 'no structural changes',
-            $this->getUncostedCount(),
             $this->predictedSeconds,
             $this->blockingSeconds,
             $this->confidence
         );
+        $uncosted = $this->getUncostedCount();
+        if ($uncosted) {
+            $summary .= sprintf(' Plus %d patch(es)/script(s) not costed.', $uncosted);
+        }
+
+        return $summary;
     }
 
     /**
@@ -97,6 +102,7 @@ class Forecast
             'predicted_secs' => $this->predictedSeconds,
             'blocking_secs' => $this->blockingSeconds,
             'confidence' => $this->confidence,
+            'uncosted' => $this->getUncostedCount(),
             'summary' => $this->getSummary(),
             'schema_changes' => array_map(
                 static fn (SchemaChange $change): array => $change->toArray(),

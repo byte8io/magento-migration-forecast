@@ -99,9 +99,11 @@ class Forecaster
         $dataPatches = $this->pendingPatchProvider->getDataPatches();
         $schemaPatches = $this->pendingPatchProvider->getSchemaPatches();
         $legacyScripts = $this->pendingPatchProvider->getLegacyScripts();
-        $warnings = $this->getNewModuleWarnings();
+        [$warnings, $schemaUnseen] = $this->getNewModuleWarnings();
 
-        if ($dataPatches || $schemaPatches || $legacyScripts || $warnings) {
+        // Confidence describes the DDL figure only. Pending patches are listed, not costed,
+        // and do not drag it down; DDL the diff could not see does.
+        if ($schemaUnseen) {
             $confidence = Forecast::CONFIDENCE_LOW;
         } elseif ($anyRowsUnknown) {
             $confidence = Forecast::CONFIDENCE_MEDIUM;
@@ -164,26 +166,29 @@ class Forecaster
      * setup:upgrade enables modules that are on disk but missing from
      * config.php; their schema is invisible to the declarative diff until then.
      *
-     * @return string[]
+     * @return array{string[], bool} Warnings, and whether any such module ships a db_schema.xml.
      */
     private function getNewModuleWarnings(): array
     {
         $known = (array) $this->deploymentConfig->get(ConfigOptionsListConstants::KEY_MODULES, []);
         $warnings = [];
+        $schemaUnseen = false;
         foreach ($this->fullModuleList->getNames() as $moduleName) {
             if (array_key_exists($moduleName, $known)) {
                 continue;
             }
             $path = $this->componentRegistrar->getPath(ComponentRegistrar::MODULE, $moduleName);
+            $hasSchema = $path && is_file($path . '/etc/db_schema.xml');
+            $schemaUnseen = $schemaUnseen || $hasSchema;
             $warnings[] = sprintf(
                 '%s is not in app/etc/config.php yet: setup:upgrade will enable it, %s.',
                 $moduleName,
-                $path && is_file($path . '/etc/db_schema.xml')
+                $hasSchema
                     ? 'and its db_schema.xml is NOT included in this forecast'
                     : 'but it declares no schema'
             );
         }
 
-        return $warnings;
+        return [$warnings, $schemaUnseen];
     }
 }
