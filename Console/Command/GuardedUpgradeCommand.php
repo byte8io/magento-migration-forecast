@@ -33,8 +33,9 @@ class GuardedUpgradeCommand extends Command
      */
     public const RETURN_NOT_RUN = 2;
 
-    // Not under "setup:upgrade" — see ForecastCommand.
-    private const COMMAND_NAME = 'setup:db:guarded-upgrade';
+    // Not "setup:db:…": it runs the whole upgrade, not just the database part.
+    // Not "setup:up…" either: that would make the "s:up" shortcut ambiguous (see ForecastCommand).
+    private const COMMAND_NAME = 'setup:guarded-upgrade';
     private const OPTION_YES = 'yes';
     private const OPTION_KEEP_GENERATED = 'keep-generated';
 

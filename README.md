@@ -96,12 +96,12 @@ bin/magento setup:upgrade --keep-generated
 
 ## Forecast and upgrade in one step
 
-`setup:db:guarded-upgrade` shows the forecast and then runs the real
+`setup:guarded-upgrade` shows the forecast and then runs the real
 `setup:upgrade` — but only if the forecast is acceptable. It is a separate
 command: `setup:upgrade` itself is never replaced, wrapped or altered.
 
 ```bash
-bin/magento setup:db:guarded-upgrade --keep-generated
+bin/magento setup:guarded-upgrade --keep-generated
 ```
 
 **At a terminal** it prints the forecast and asks `Run setup:upgrade now? [y/N]`.
@@ -111,7 +111,7 @@ Pass `--yes` to skip the question.
 prompts. The limits you pass decide:
 
 ```bash
-bin/magento setup:db:guarded-upgrade --keep-generated --max-blocking-seconds=10
+bin/magento setup:guarded-upgrade --keep-generated --max-blocking-seconds=10
 ```
 
 | Exit code | Meaning |
@@ -131,7 +131,7 @@ through; for the others, run the two commands separately.
 - name: Upgrade the database, unless it would block writes for too long
   run: |
     status=0
-    bin/magento setup:db:guarded-upgrade --keep-generated --max-blocking-seconds=10 || status=$?
+    bin/magento setup:guarded-upgrade --keep-generated --max-blocking-seconds=10 || status=$?
     if [ "$status" -eq 2 ]; then
       echo "::error::Migration forecast is over the limit. Schedule this release for a maintenance window."
     fi
