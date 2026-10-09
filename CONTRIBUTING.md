@@ -12,7 +12,7 @@ Open Source 2.4.x or Mage-OS 2.x / 3.x install, then:
 
 ```bash
 bin/magento module:enable Byte8_MigrationForecast
-bin/magento setup:upgrade:forecast
+bin/magento setup:db:forecast
 ```
 
 ## Checks

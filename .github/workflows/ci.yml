@@ -142,21 +142,27 @@ jobs:
           bin/magento module:status Byte8_MigrationForecast | grep -q 'Module is enabled'
           bin/magento setup:di:compile
 
+      - name: Core command shortcuts still resolve
+        working-directory: magento
+        run: |
+          bin/magento s:up --help | grep -q 'setup:upgrade \[options\]'
+          bin/magento s:d:s --help | grep -q 'setup:db:status \[options\]'
+
       - name: Forecast runs on a clean install
         working-directory: magento
         run: |
-          bin/magento setup:upgrade:forecast
-          bin/magento setup:upgrade:forecast --format=json > clean.json
+          bin/magento setup:db:forecast
+          bin/magento setup:db:forecast --format=json > clean.json
           jq -e 'has("schema_changes") and has("predicted_secs") and has("confidence")' clean.json
 
       - name: Forecast detects schema drift
         working-directory: magento
         run: |
           mysql -h 127.0.0.1 -uroot -proot magento -e 'ALTER TABLE admin_user DROP COLUMN interface_locale'
-          bin/magento setup:upgrade:forecast --format=json > drift.json
+          bin/magento setup:db:forecast --format=json > drift.json
           jq -e '[.schema_changes[] | select(.table == "admin_user" and .kind == "add_column" and .name == "interface_locale" and .algorithm == "instant")] | length == 1' drift.json
           # The gate must fail the build when the limit is exceeded.
-          if bin/magento setup:upgrade:forecast --max-seconds=0; then
+          if bin/magento setup:db:forecast --max-seconds=0; then
             echo 'Expected a failure exit code with --max-seconds=0' >&2
             exit 1
           fi
@@ -165,7 +171,7 @@ jobs:
         working-directory: magento
         run: |
           bin/magento setup:upgrade --keep-generated
-          bin/magento setup:upgrade:forecast --format=json > after.json
+          bin/magento setup:db:forecast --format=json > after.json
           jq -e '[.schema_changes[] | select(.table == "admin_user")] | length == 0' after.json
 
       - name: Coding standard

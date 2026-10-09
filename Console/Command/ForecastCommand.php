@@ -24,7 +24,8 @@ use Symfony\Component\Console\Output\OutputInterface;
  */
 class ForecastCommand extends Command
 {
-    private const COMMAND_NAME = 'setup:upgrade:forecast';
+    // Not under "setup:upgrade:" — a command there makes the everyday "s:up" shortcut ambiguous.
+    private const COMMAND_NAME = 'setup:db:forecast';
     private const OPTION_FORMAT = 'format';
     private const OPTION_MAX_SECONDS = 'max-seconds';
     private const OPTION_MAX_BLOCKING_SECONDS = 'max-blocking-seconds';

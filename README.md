@@ -6,14 +6,14 @@
 
 Know what `setup:upgrade` will do to your database **before** you run it.
 
-`bin/magento setup:upgrade:forecast` lists every pending schema change, tells
+`bin/magento setup:db:forecast` lists every pending schema change, tells
 you which MySQL algorithm each one will use, whether it blocks writes, and
 roughly how long it will take on the tables you actually have.
 
 Example output (illustrative figures):
 
 ```
-$ bin/magento setup:upgrade:forecast
+$ bin/magento setup:db:forecast
 +------------------+----------------+-------------------------------+-----------+----------+-----------+------+
 | Table            | Change         | Name                          | Algorithm | Impact   | Rows      | Est. |
 +------------------+----------------+-------------------------------+-----------+----------+-----------+------+
@@ -74,7 +74,7 @@ alternative package.
 Run it on the new code, before `setup:upgrade`:
 
 ```bash
-bin/magento setup:upgrade:forecast
+bin/magento setup:db:forecast
 ```
 
 | Option | What it does |
@@ -89,7 +89,7 @@ bin/magento setup:upgrade:forecast
 
 ```bash
 # Refuse to deploy in business hours if writes would be blocked for more than 10 seconds.
-bin/magento setup:upgrade:forecast --max-blocking-seconds=10 || exit 1
+bin/magento setup:db:forecast --max-blocking-seconds=10 || exit 1
 bin/magento setup:upgrade --keep-generated
 ```
 
