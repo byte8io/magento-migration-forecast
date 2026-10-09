@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.3.0](https://github.com/byte8io/magento-migration-forecast/compare/v0.2.0...v0.3.0) (2026-10-09)
+
+
+### Features
+
+* add setup:db:guarded-upgrade ([7b4cb75](https://github.com/byte8io/magento-migration-forecast/commit/7b4cb753af9184aa5df669f2a647012e9dbb8647))
+
+
+### Bug Fixes
+
+* name the guarded command setup:guarded-upgrade ([f9330c2](https://github.com/byte8io/magento-migration-forecast/commit/f9330c2d026be324815e3c21ea7acd97cddad895))
+* never prompt when no terminal is attached ([fd4930b](https://github.com/byte8io/magento-migration-forecast/commit/fd4930b0eda6a44aa9353a4a88704afc0740db42))
+
 ## [0.2.0](https://github.com/byte8io/magento-migration-forecast/compare/v0.1.1...v0.2.0) (2026-10-09)
 
 
