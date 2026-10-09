@@ -11,11 +11,17 @@
         <arguments>
             <argument name="commands" xsi:type="array">
                 <item name="byte8_migration_forecast" xsi:type="object">Byte8\MigrationForecast\Console\Command\ForecastCommand</item>
+                <item name="byte8_migration_guarded_upgrade" xsi:type="object">Byte8\MigrationForecast\Console\Command\GuardedUpgradeCommand</item>
             </argument>
         </arguments>
     </type>
     <!-- Commands are instantiated on every bin/magento call: keep the schema readers lazy. -->
     <type name="Byte8\MigrationForecast\Console\Command\ForecastCommand">
+        <arguments>
+            <argument name="forecaster" xsi:type="object">Byte8\MigrationForecast\Model\Forecaster\Proxy</argument>
+        </arguments>
+    </type>
+    <type name="Byte8\MigrationForecast\Console\Command\GuardedUpgradeCommand">
         <arguments>
             <argument name="forecaster" xsi:type="object">Byte8\MigrationForecast\Model\Forecaster\Proxy</argument>
         </arguments>

@@ -147,6 +147,7 @@ jobs:
         run: |
           bin/magento s:up --help | grep -q 'setup:upgrade \[options\]'
           bin/magento s:d:s --help | grep -q 'setup:db:status \[options\]'
+          bin/magento s:d:f --help | grep -q 'setup:db:forecast \[options\]'
 
       - name: Forecast runs on a clean install
         working-directory: magento
@@ -167,10 +168,17 @@ jobs:
             exit 1
           fi
 
-      - name: setup:upgrade clears the forecast
+      - name: Guarded upgrade refuses over the limit, then upgrades within it
         working-directory: magento
         run: |
-          bin/magento setup:upgrade --keep-generated
+          # Over the limit: exit code 2, and the drift is still there afterwards.
+          status=0
+          bin/magento setup:db:guarded-upgrade --max-seconds=0 || status=$?
+          test "$status" -eq 2
+          bin/magento setup:db:forecast --format=json > refused.json
+          jq -e '[.schema_changes[] | select(.table == "admin_user")] | length == 1' refused.json
+          # Within the limit, unattended: no prompt, the real setup:upgrade runs.
+          bin/magento setup:db:guarded-upgrade --keep-generated --max-blocking-seconds=30 < /dev/null
           bin/magento setup:db:forecast --format=json > after.json
           jq -e '[.schema_changes[] | select(.table == "admin_user")] | length == 0' after.json
 

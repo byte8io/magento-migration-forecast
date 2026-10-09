@@ -94,6 +94,53 @@ bin/magento setup:db:forecast --max-blocking-seconds=10 || exit 1
 bin/magento setup:upgrade --keep-generated
 ```
 
+## Forecast and upgrade in one step
+
+`setup:db:guarded-upgrade` shows the forecast and then runs the real
+`setup:upgrade` — but only if the forecast is acceptable. It is a separate
+command: `setup:upgrade` itself is never replaced, wrapped or altered.
+
+```bash
+bin/magento setup:db:guarded-upgrade --keep-generated
+```
+
+**At a terminal** it prints the forecast and asks `Run setup:upgrade now? [y/N]`.
+Pass `--yes` to skip the question.
+
+**Unattended** (CI, deploy scripts, anything without a terminal) it never
+prompts. The limits you pass decide:
+
+```bash
+bin/magento setup:db:guarded-upgrade --keep-generated --max-blocking-seconds=10
+```
+
+| Exit code | Meaning |
+|---|---|
+| `0` | The forecast was within limits and `setup:upgrade` succeeded. |
+| `2` | `setup:upgrade` was **not run**: a limit was exceeded, the forecast could not be built, or you answered no. Nothing was changed. |
+| anything else | `setup:upgrade` ran and failed; this is its own exit code. |
+
+It accepts the same limit and rate options as `setup:db:forecast`. Without any
+limit, an unattended run always proceeds — set at least one for it to guard
+anything. Of `setup:upgrade`'s own options only `--keep-generated` is passed
+through; for the others, run the two commands separately.
+
+### GitHub Actions
+
+```yaml
+- name: Upgrade the database, unless it would block writes for too long
+  run: |
+    status=0
+    bin/magento setup:db:guarded-upgrade --keep-generated --max-blocking-seconds=10 || status=$?
+    if [ "$status" -eq 2 ]; then
+      echo "::error::Migration forecast is over the limit. Schedule this release for a maintenance window."
+    fi
+    exit "$status"
+```
+
+Run it where `setup:upgrade` would run — on the server, or over SSH from the
+workflow — because the forecast needs the live database.
+
 ## How it works
 
 1. **The diff is Magento's own.** The command asks the declarative-schema
