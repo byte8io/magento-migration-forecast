@@ -109,7 +109,8 @@ class GuardedUpgradeCommand extends Command
             return self::RETURN_NOT_RUN;
         }
 
-        if (!$forecast->isUpToDate() && $input->isInteractive() && !$input->getOption(self::OPTION_YES)) {
+        $attended = $this->isAttended($input);
+        if (!$forecast->isUpToDate() && $attended && !$input->getOption(self::OPTION_YES)) {
             $question = new ConfirmationQuestion('Run setup:upgrade now? [y/N] ', false);
             /** @var QuestionHelper $helper */
             $helper = $this->getHelper('question');
@@ -123,7 +124,7 @@ class GuardedUpgradeCommand extends Command
         if ($input->getOption(self::OPTION_KEEP_GENERATED)) {
             $arguments[] = '--' . self::OPTION_KEEP_GENERATED;
         }
-        if (!$input->isInteractive()) {
+        if (!$attended) {
             $arguments[] = '--no-interaction';
         }
 
@@ -136,5 +137,19 @@ class GuardedUpgradeCommand extends Command
                 $output->write($buffer, false, OutputInterface::OUTPUT_RAW);
             }
         );
+    }
+
+    /**
+     * Whether a person is there to answer a question.
+     *
+     * Symfony reports "interactive" unless --no-interaction is passed, even with
+     * no terminal attached; a prompt there would be answered by end-of-file.
+     *
+     * @param InputInterface $input
+     * @return bool
+     */
+    private function isAttended(InputInterface $input): bool
+    {
+        return $input->isInteractive() && defined('STDIN') && stream_isatty(STDIN);
     }
 }
