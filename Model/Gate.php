@@ -44,10 +44,7 @@ class Gate
             );
         }
         if ($failOnUncosted && $forecast->getUncostedCount()) {
-            $violations[] = sprintf(
-                '%d pending patch(es)/script(s) are not costed.',
-                $forecast->getUncostedCount()
-            );
+            $violations[] = sprintf('Pending and not costed: %s.', $forecast->getUncostedDescription());
         }
 
         return $violations;

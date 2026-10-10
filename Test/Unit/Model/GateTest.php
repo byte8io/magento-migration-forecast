@@ -38,7 +38,7 @@ class GateTest extends TestCase
         self::assertCount(3, $violations);
         self::assertStringContainsString('~31s exceeds the limit of 30s', $violations[0]);
         self::assertStringContainsString('write-blocking time ~11s exceeds the limit of 10s', $violations[1]);
-        self::assertStringContainsString('2 pending patch(es)/script(s) are not costed', $violations[2]);
+        self::assertStringContainsString('Pending and not costed: 2 data patches.', $violations[2]);
     }
 
     public function testAZeroLimitIsALimitNotAnAbsentOne(): void

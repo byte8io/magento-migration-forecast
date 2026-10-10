@@ -32,7 +32,7 @@ Pending data patches (not costed): 1
   - Acme\Widget\Setup\Patch\Data\SeedWidgets
 
 DDL forecast: 2 blocking, 1 instant, 1 online; ~81s, ~78s write-blocking (confidence: high).
-Plus 1 patch(es)/script(s) not costed.
+Plus 1 data patch not costed.
 ```
 
 `setup:db:forecast` is read-only: it never alters the database, never writes a

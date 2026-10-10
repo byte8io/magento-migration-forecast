@@ -61,6 +61,28 @@ class Forecast
     }
 
     /**
+     * What is pending but not costed, in words: "1 data patch and 2 schema patches".
+     *
+     * @return string Empty when nothing is pending.
+     */
+    public function getUncostedDescription(): string
+    {
+        $parts = [];
+        foreach ([
+            [count($this->dataPatches), 'data patch', 'data patches'],
+            [count($this->schemaPatches), 'schema patch', 'schema patches'],
+            [count($this->legacyScripts), 'module with legacy setup scripts', 'modules with legacy setup scripts'],
+        ] as [$count, $singular, $plural]) {
+            if ($count) {
+                $parts[] = $count . ' ' . ($count === 1 ? $singular : $plural);
+            }
+        }
+        $last = array_pop($parts);
+
+        return $parts ? implode(', ', $parts) . ' and ' . $last : (string) $last;
+    }
+
+    /**
      * One-line summary, suitable for a deploy log.
      *
      * @return string
@@ -77,16 +99,20 @@ class Forecast
             $classes[] = $count . ' ' . $impact;
         }
 
-        $summary = sprintf(
-            'DDL forecast: %s; ~%ds, ~%ds write-blocking (confidence: %s).',
-            $classes ? implode(', ', $classes) : 'no structural changes',
-            $this->predictedSeconds,
-            $this->blockingSeconds,
-            $this->confidence
-        );
-        $uncosted = $this->getUncostedCount();
-        if ($uncosted) {
-            $summary .= sprintf(' Plus %d patch(es)/script(s) not costed.', $uncosted);
+        // With no DDL pending the only seconds left are the fixed bootstrap allowance,
+        // which would read as a prediction for the whole setup:upgrade run.
+        $summary = $classes
+            ? sprintf(
+                'DDL forecast: %s; ~%ds, ~%ds write-blocking (confidence: %s).',
+                implode(', ', $classes),
+                $this->predictedSeconds,
+                $this->blockingSeconds,
+                $this->confidence
+            )
+            : sprintf('DDL forecast: no structural changes, no DDL time (confidence: %s).', $this->confidence);
+        $uncosted = $this->getUncostedDescription();
+        if ($uncosted !== '') {
+            $summary .= sprintf(' Plus %s not costed.', $uncosted);
         }
 
         return $summary;

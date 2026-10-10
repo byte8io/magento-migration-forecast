@@ -24,7 +24,7 @@ class ForecastTest extends TestCase
 
         self::assertSame(
             'DDL forecast: 1 instant; ~4s, ~0s write-blocking (confidence: high).'
-            . ' Plus 1 patch(es)/script(s) not costed.',
+            . ' Plus 1 data patch not costed.',
             $forecast->getSummary()
         );
         self::assertSame('high', $forecast->toArray()['confidence']);
@@ -37,11 +37,42 @@ class ForecastTest extends TestCase
         $forecast = $this->forecast([], []);
 
         self::assertSame(
-            'DDL forecast: no structural changes; ~4s, ~0s write-blocking (confidence: high).',
+            'DDL forecast: no structural changes, no DDL time (confidence: high).',
             $forecast->getSummary()
         );
         self::assertSame(0, $forecast->toArray()['uncosted']);
         self::assertTrue($forecast->isUpToDate());
+    }
+
+    public function testAPatchOnlyReleaseQuotesNoSeconds(): void
+    {
+        $forecast = $this->forecast([], ['Acme\\Widget\\Setup\\Patch\\Data\\SeedWidgets']);
+
+        self::assertSame(
+            'DDL forecast: no structural changes, no DDL time (confidence: high). Plus 1 data patch not costed.',
+            $forecast->getSummary()
+        );
+    }
+
+    public function testUncostedWorkIsNamedByKindWithPlurals(): void
+    {
+        $forecast = new Forecast(
+            [],
+            [],
+            ['A', 'B'],
+            ['C'],
+            ['Acme_Widget'],
+            [],
+            3,
+            0,
+            Forecast::CONFIDENCE_HIGH
+        );
+
+        self::assertSame(
+            '2 data patches, 1 schema patch and 1 module with legacy setup scripts',
+            $forecast->getUncostedDescription()
+        );
+        self::assertSame('', $this->forecast([], [])->getUncostedDescription());
     }
 
     /**
