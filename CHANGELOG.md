@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.1](https://github.com/byte8io/magento-migration-forecast/compare/v0.3.0...v0.3.1) (2026-10-10)
+
+
+### Documentation
+
+* command reference for both commands, JSON fields and exit codes ([009e71a](https://github.com/byte8io/magento-migration-forecast/commit/009e71a383a99220694133bf1554edec138b0536))
+
 ## [0.3.0](https://github.com/byte8io/magento-migration-forecast/compare/v0.2.0...v0.3.0) (2026-10-09)
 
 
