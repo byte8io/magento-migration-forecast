@@ -1,6 +1,6 @@
 {
     "name": "byte8/module-migration-forecast",
-    "description": "Forecast what setup:upgrade will do to your Magento 2 database before you run it — pending DDL classified against MySQL's online-DDL matrix and costed by live row counts.",
+    "description": "Forecast what setup:upgrade will do to your Magento 2 / Mage-OS database before you run it — pending DDL classified against MySQL's online-DDL matrix and costed by live row counts — and optionally gate the upgrade on it.",
     "type": "magento2-module",
     "license": "MIT",
     "keywords": [

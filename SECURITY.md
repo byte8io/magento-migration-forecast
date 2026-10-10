@@ -19,7 +19,17 @@ or a mitigation plan as soon as the report is confirmed.
 
 ## Scope
 
-The module is a read-only CLI command: it runs no DDL, writes no files and makes
-no network calls. It reads the database schema and `information_schema` through
-Magento's own connection. Reports about anything that breaks those guarantees
-are in scope.
+The module adds two CLI commands and nothing else: no admin UI, no web routes,
+no cron, no configuration, and no network calls.
+
+- `setup:db:forecast` is read-only. It runs no DDL and writes no files; it
+  reads the database schema and `information_schema` through Magento's own
+  connection.
+- `setup:guarded-upgrade` builds the same forecast and then starts Magento's
+  own `setup:upgrade` as a child process, using the PHP binary and the
+  `bin/magento` of the current installation. It adds no behaviour to the
+  upgrade itself.
+
+Reports about anything that breaks those guarantees are in scope — for example
+a way to make either command run something other than `setup:upgrade`, or to
+make the forecast write to the database.

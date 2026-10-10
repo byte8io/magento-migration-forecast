@@ -15,6 +15,15 @@ bin/magento module:enable Byte8_MigrationForecast
 bin/magento setup:db:forecast
 ```
 
+In developer mode, clear `generated/code/Byte8/MigrationForecast` after changing
+a constructor: Magento keeps the old generated class and every `bin/magento`
+call fails until it is removed.
+
+The module has two commands. `setup:db:forecast` is read-only and safe to run
+anywhere. `setup:guarded-upgrade` runs the real `setup:upgrade` when it
+proceeds, so try it only on a database you are willing to upgrade — or with
+`--max-seconds=0`, which always refuses.
+
 ## Checks
 
 Every pull request runs these in GitHub Actions; run them locally first.
@@ -28,8 +37,16 @@ vendor/bin/phpcs --standard=Magento2 --severity=10 --extensions=php app/code/Byt
 vendor/bin/phpstan analyse -c app/code/Byte8/MigrationForecast/phpstan.neon.dist --autoload-file vendor/autoload.php
 ```
 
-CI also installs the module into clean Mage-OS and Magento projects and checks
-that a deliberately introduced schema drift shows up in the forecast.
+CI also installs the module into clean Mage-OS and Magento projects and checks,
+end to end, that a deliberately introduced schema drift shows up in the
+forecast, that `setup:guarded-upgrade` refuses over a limit and upgrades within
+it, and that the core shortcuts (`s:up`, `s:d:s`) still resolve.
+
+## Naming commands
+
+A new command must not start with `setup:up`. Magento resolves shortcuts by
+prefix, so such a name makes the everyday `bin/magento s:up` ambiguous. The CI
+shortcut check exists because this happened once.
 
 ## Changing the classification
 

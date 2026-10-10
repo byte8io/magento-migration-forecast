@@ -6,9 +6,12 @@
 
 Know what `setup:upgrade` will do to your database **before** you run it.
 
-`bin/magento setup:db:forecast` lists every pending schema change, tells
-you which MySQL algorithm each one will use, whether it blocks writes, and
-roughly how long it will take on the tables you actually have.
+The module adds two commands:
+
+| Command | What it does |
+|---|---|
+| `bin/magento setup:db:forecast` | Lists every pending schema change, the MySQL algorithm each one will use, whether it blocks writes, and roughly how long it will take on the tables you actually have. Read-only. |
+| `bin/magento setup:guarded-upgrade` | Shows the same forecast, then runs the real `setup:upgrade` — only if the forecast is within the limits you set, or you confirm at the prompt. |
 
 Example output (illustrative figures):
 
@@ -32,8 +35,9 @@ DDL forecast: 2 blocking, 1 instant, 1 online; ~81s, ~78s write-blocking (confid
 Plus 1 patch(es)/script(s) not costed.
 ```
 
-It is read-only. It never alters the database, never writes a file, and never
-blocks a deploy unless you ask it to.
+`setup:db:forecast` is read-only: it never alters the database, never writes a
+file, and never fails a build unless you give it a limit. Neither command
+replaces, wraps or alters `setup:upgrade` itself.
 
 ## Why
 
@@ -69,7 +73,9 @@ On Mage-OS the requirement on `magento/framework` is satisfied by
 `mage-os/framework`, so `composer require` works unchanged — no patches, no
 alternative package.
 
-## Use
+## Commands
+
+### `setup:db:forecast`
 
 Run it on the new code, before `setup:upgrade`:
 
@@ -79,14 +85,19 @@ bin/magento setup:db:forecast
 
 | Option | What it does |
 |---|---|
-| `--format=json` | Machine-readable output for CI and deploy tooling. |
-| `--max-seconds=N` | Exit `1` when the predicted duration exceeds `N` seconds. |
+| `--format=json` | Machine-readable output for CI and deploy tooling (see [JSON output](#json-output)). Default `text`. |
+| `--max-seconds=N` | Exit `1` when the predicted DDL duration exceeds `N` seconds. |
 | `--max-blocking-seconds=N` | Exit `1` when the write-blocking part exceeds `N` seconds. |
 | `--fail-on-uncosted` | Exit `1` when any patch or setup script is pending, because its cost is unknown. |
 | `--inplace-rate=N` | Rows per second your host manages for in-place DDL. Default `100000`. |
 | `--copy-rate=N` | Rows per second your host manages for table-copy DDL. Default `50000`. |
 
-### Gate a deploy
+| Exit code | Meaning |
+|---|---|
+| `0` | Forecast built; no limit was given, or none was exceeded. |
+| `1` | A limit was exceeded, the forecast could not be built, or `--format` was invalid. |
+
+Gate a deploy with it:
 
 ```bash
 # Refuse to deploy in business hours if writes would be blocked for more than 10 seconds.
@@ -94,18 +105,17 @@ bin/magento setup:db:forecast --max-blocking-seconds=10 || exit 1
 bin/magento setup:upgrade --keep-generated
 ```
 
-## Forecast and upgrade in one step
+### `setup:guarded-upgrade`
 
-`setup:guarded-upgrade` shows the forecast and then runs the real
-`setup:upgrade` — but only if the forecast is acceptable. It is a separate
-command: `setup:upgrade` itself is never replaced, wrapped or altered.
+Forecast and upgrade in one step. It prints the forecast and then runs the real
+`setup:upgrade`, in a separate process, exactly as if you had typed it.
 
 ```bash
 bin/magento setup:guarded-upgrade --keep-generated
 ```
 
-**At a terminal** it prints the forecast and asks `Run setup:upgrade now? [y/N]`.
-Pass `--yes` to skip the question.
+**At a terminal** it asks `Run setup:upgrade now? [y/N]` before proceeding. It
+does not ask when nothing is pending.
 
 **Unattended** (CI, deploy scripts, anything without a terminal) it never
 prompts. The limits you pass decide:
@@ -114,18 +124,26 @@ prompts. The limits you pass decide:
 bin/magento setup:guarded-upgrade --keep-generated --max-blocking-seconds=10
 ```
 
+| Option | What it does |
+|---|---|
+| `--max-seconds=N` | Do not run `setup:upgrade` when the predicted DDL duration exceeds `N` seconds. |
+| `--max-blocking-seconds=N` | Do not run `setup:upgrade` when the write-blocking part exceeds `N` seconds. |
+| `--fail-on-uncosted` | Do not run `setup:upgrade` when any patch or setup script is pending. |
+| `--inplace-rate=N`, `--copy-rate=N` | Host throughput, as for `setup:db:forecast`. |
+| `-y`, `--yes` | Do not ask for confirmation at a terminal. |
+| `--keep-generated` | Passed through to `setup:upgrade`. |
+
 | Exit code | Meaning |
 |---|---|
 | `0` | The forecast was within limits and `setup:upgrade` succeeded. |
 | `2` | `setup:upgrade` was **not run**: a limit was exceeded, the forecast could not be built, or you answered no. Nothing was changed. |
 | anything else | `setup:upgrade` ran and failed; this is its own exit code. |
 
-It accepts the same limit and rate options as `setup:db:forecast`. Without any
-limit, an unattended run always proceeds — set at least one for it to guard
-anything. Of `setup:upgrade`'s own options only `--keep-generated` is passed
-through; for the others, run the two commands separately.
+Without any limit, an unattended run always proceeds — set at least one for it
+to guard anything. Of `setup:upgrade`'s own options only `--keep-generated` is
+passed through; for the others, run the two commands separately.
 
-### GitHub Actions
+#### GitHub Actions
 
 ```yaml
 - name: Upgrade the database, unless it would block writes for too long
@@ -141,9 +159,31 @@ through; for the others, run the two commands separately.
 Run it where `setup:upgrade` would run — on the server, or over SSH from the
 workflow — because the forecast needs the live database.
 
+### JSON output
+
+`bin/magento setup:db:forecast --format=json` prints one object:
+
+| Field | Type | Meaning |
+|---|---|---|
+| `up_to_date` | bool | Nothing is pending: no DDL, no patches, no setup scripts. |
+| `predicted_secs` | int | Bootstrap overhead plus all DDL. Patches and scripts are not included. |
+| `blocking_secs` | int | Part of the DDL during which some table rejects writes. |
+| `confidence` | string | `high`, `medium` or `low` — how far the DDL figure can be trusted (see [Confidence](#confidence)). |
+| `uncosted` | int | Number of pending patches and setup scripts, which are listed but not costed. |
+| `summary` | string | The one-line summary shown at the end of the text output. |
+| `schema_changes` | array | One entry per pending change: `table`, `kind`, `name`, `algorithm` (`metadata`, `instant`, `inplace`, `copy`), `impact` (`metadata`, `instant`, `online`, `blocking`), `rebuilds_table`, `blocks_writes`, `rows` (null when unknown), `est_secs`, `note`. |
+| `tables` | object | Per affected table: `rows`, `bytes`, `est_secs`, `blocks_writes`. |
+| `data_patches`, `schema_patches` | array | Class names of patches not yet applied. |
+| `legacy_scripts` | array | Modules whose `Install`/`Upgrade` scripts will run. |
+| `warnings` | array | Anything that makes the forecast incomplete, such as a module not yet in `app/etc/config.php`. |
+
+`kind` is one of `new_table`, `drop_table`, `modify_table`, `recreate_table`,
+`add_column`, `drop_column`, `modify_column`, `add_index`, `drop_index`,
+`add_constraint`, `drop_constraint`.
+
 ## How it works
 
-1. **The diff is Magento's own.** The command asks the declarative-schema
+1. **The diff is Magento's own.** Both commands ask the declarative-schema
    engine for the difference between the merged `db_schema.xml` files and the
    live database — the exact operation list `setup:upgrade` executes,
    `db_schema_whitelist.json` rules included.
