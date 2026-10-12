@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.3.2](https://github.com/byte8io/magento-migration-forecast/compare/v0.3.1...v0.3.2) (2026-10-10)
+
+
+### Bug Fixes
+
+* clearer forecast summary for patch-only releases ([b39a1b2](https://github.com/byte8io/magento-migration-forecast/commit/b39a1b2319ee42f243be54b3e2f12b7255d00302))
+
 ## [0.3.1](https://github.com/byte8io/magento-migration-forecast/compare/v0.3.0...v0.3.1) (2026-10-10)
 
 
